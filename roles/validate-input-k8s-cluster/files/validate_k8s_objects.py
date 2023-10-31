@@ -106,11 +106,19 @@ def main():
 
     if args.create_service_account == 'False':
         input_service_accounts = []
-        _finditem(input_data, 'serviceAccountRef', input_service_accounts)
+        workload_identity = input_data.get('gcp', {}).get('workloadIdentityEnabled', False)
+
+        if workload_identity == 'True':
+            _finditem(input_data, 'serviceAccountRef', input_service_accounts)
+        else:
+            _finditem(input_data, 'gsa', input_service_accounts)
 
         for each_sa in input_service_accounts:
             if each_sa not in apigee_secrets:
-                validations.append(f"Service Account Secret: {each_sa} Not found in {apigee_namespace} namespace")  # noqa
+                if workload_identity:
+                    validations.append(f"Service Account: {each_sa} Not found in {apigee_namespace} namespace")
+                else:
+                    validations.append(f"Service Account Secret: {each_sa} Not found in {apigee_namespace} namespace")  # noqa
 
     if len(validations) > 0:
         print('Kubernetes validation Errors found !')
